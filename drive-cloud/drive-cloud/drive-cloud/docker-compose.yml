@@ -1,0 +1,35 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      MONGO_URI: mongodb://mongo:27017/clouddrive
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      PORT: 5000
+      UPLOAD_DIR: /data/uploads
+      # Leave S3_BUCKET empty to store files on the local volume.
+      # Set it (e.g. on AWS EC2) to store files in S3 instead.
+      S3_BUCKET: ${S3_BUCKET:-}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      - mongo
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
+  uploads:
